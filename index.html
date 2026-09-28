@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل متابعة الطلاب الاحترافي</title>
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="متابعة الطلاب">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        .table-container::-webkit-scrollbar { height: 6px; width: 6px; }
+        .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- الترويسة العليا -->
+    <header class="bg-gradient-to-r from-teal-700 to-emerald-800 text-white shadow-md p-4">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="text-center sm:text-right w-full sm:w-auto">
+                <!-- اسم المدرسة قابل للتعديل لتغييره مستقبلاً بأي مدرسة أخرى -->
+                <div class="flex items-center gap-2 justify-center sm:justify-start">
+                    <input type="text" id="schoolNameInput" value="مدرسة عناب الأساسية" onchange="saveSchoolName()" class="bg-teal-900/60 text-white font-bold text-base px-2 py-1 rounded border border-teal-500/50 outline-none w-56 text-center sm:text-right" title="اضغط لتعديل اسم المدرسة">
+                </div>
+                <p class="text-xs text-teal-100 mt-1">المعلمة: روان سيد أحمد | سجل المتابعة والتقييم</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-1">
+                    💾 تصدير
+                </button>
+                <label class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-1.5 rounded shadow transition cursor-pointer flex items-center gap-1">
+                    📂 استيراد
+                    <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="max-w-4xl w-full mx-auto p-3 sm:p-5 flex-grow">
+        
+        <!-- لوحة التحكم لاختيار الصف والفصل والشهر -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">الصف الدراسي:</label>
+                <select id="gradeSelect" onchange="loadStudents()" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                    <option value="الصف الأول">الصف الأول</option>
+                    <option value="الصف الثاني">الصف الثاني</option>
+                    <option value="الصف الثالث">الصف الثالث</option>
+                    <option value="الصف الرابع">الصف الرابع</option>
+                    <option value="الصف الخامس" selected>الصف الخامس</option>
+                    <option value="الصف السادس">الصف السادس</option>
+                    <option value="الصف السابع">الصف السابع</option>
+                    <option value="الصف الثامن">الصف الثامن</option>
+                    <option value="الصف التاسع">الصف التاسع</option>
+                    <option value="الصف العاشر">الصف العاشر</option>
+                    <option value="الصف الحادي عشر">الصف الحادي عشر</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">الشعبة:</label>
+                <select id="sectionSelect" onchange="loadStudents()" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                    <option value="أ">أ</option>
+                    <option value="ب">ب</option>
+                    <option value="ج">ج</option>
+                    <option value="عام">عام / بدون شعبة</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">الفصل الدراسي:</label>
+                <select id="termSelect" onchange="loadStudents()" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                    <option value="الفصل الأول">الفصل الأول</option>
+                    <option value="الفصل الثاني">الفصل الثاني</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">الشهر:</label>
+                <select id="monthSelect" onchange="loadStudents()" class="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                    <option value="سبتمبر">سبتمبر (9)</option>
+                    <option value="أكتوبر">أكتوبر (10)</option>
+                    <option value="نوفمبر">نوفمبر (11)</option>
+                    <option value="ديسمبر">ديسمبر (12)</option>
+                    <option value="يناير">يناير (1)</option>
+                    <option value="فبراير">فبراير (2)</option>
+                    <option value="مارس">مارس (3)</option>
+                    <option value="أبريل">أبريل (4)</option>
+                    <option value="مايو">مايو (5)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- إضافة طالب جديد أو إضافة جماعية -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+            <h2 class="text-sm font-bold text-teal-800 mb-2">➕ إضافة طالب جديد للقائمة</h2>
+            <div class="flex gap-2">
+                <input type="text" id="newStudentName" placeholder="أدخل اسم الطالب الثلاثي..." class="flex-grow text-sm border border-slate-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                <button onclick="addStudent()" class="bg-teal-700 hover:bg-teal-800 text-white text-sm px-4 py-2 rounded-lg font-medium transition shadow-sm">إضافة</button>
+            </div>
+            <div class="mt-2 text-left">
+                <button onclick="toggleBulkModal()" class="text-xs text-teal-700 hover:underline font-medium">📋 إضافة أسماء متعددة دفعة واحدة (نسخ ولصق)</button>
+            </div>
+        </div>
+
+        <!-- جدول التقييم الرئيسي (الخانات الخمس المطلوبة) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-3 bg-slate-100 border-b border-slate-200 flex justify-between items-center">
+                <span id="currentClassTitle" class="text-xs font-bold text-slate-700">قائمة الطلاب والتقييمات</span>
+                <span id="studentCountBadge" class="bg-teal-700 text-white text-xs px-2 py-0.5 rounded-full">0 طالب</span>
+            </div>
+            
+            <div class="table-container overflow-x-auto">
+                <table class="w-full text-right border-collapse text-xs sm:text-sm">
+                    <thead>
+                        <tr class="bg-slate-200 text-slate-700 font-bold border-b border-slate-300">
+                            <th class="p-2.5 text-center w-12">#</th>
+                            <th class="p-2.5 min-w-[150px]">اسم الطالب / الطالبة</th>
+                            <th class="p-2.5 text-center w-28 bg-blue-50 text-blue-900 border-r border-slate-300">Listening</th>
+                            <th class="p-2.5 text-center w-28 bg-emerald-50 text-emerald-900 border-r border-slate-300">Speaking</th>
+                            <th class="p-2.5 text-center w-28 bg-amber-50 text-amber-900 border-r border-slate-300">Reading</th>
+                            <th class="p-2.5 text-center w-28 bg-purple-50 text-purple-900 border-r border-slate-300">Writing</th>
+                            <th class="p-2.5 min-w-[160px] bg-rose-50 text-rose-900 border-r border-slate-300">Other Notes</th>
+                            <th class="p-2.5 text-center w-12">حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsTableBody" class="divide-y divide-slate-200">
+                        <!-- يتم حقن الطلاب هنا ديناميكياً -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- نافذة منبثقة للإضافة الجماعية -->
+    <div id="bulkModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-5 shadow-xl">
+            <h3 class="font-bold text-base text-teal-800 mb-2">إضافة قائمة طلاب دفعة واحدة</h3>
+            <p class="text-xs text-slate-500 mb-3">الصق أسماء الطلاب هنا، بحيث يكون كل اسم في سطر مستقل:</p>
+            <textarea id="bulkNamesInput" rows="6" placeholder="محمد أحمد&#10;فاطمة علي&#10;يوسف خالد" class="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none mb-3"></textarea>
+            <div class="flex justify-end gap-2">
+                <button onclick="toggleBulkModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs px-4 py-2 rounded-lg font-medium">إلغاء</button>
+                <button onclick="saveBulkStudents()" class="bg-teal-700 hover:bg-teal-800 text-white text-xs px-4 py-2 rounded-lg font-medium">حفظ وإضافة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- التذييل -->
+    <footer class="bg-slate-200 text-slate-600 text-center py-3 text-xs mt-6 border-t border-slate-300">
+        جميع الحقوق محفوظة © <span id="footerSchoolName">مدرسة عناب الأساسية</span> | نظام متابعة المعلمة روان سيد أحمد
+    </footer>
+
+    <!-- جافاسكريبت التشغيل والتخزين المحلي أوفلاين -->
+    <script>
+        // تحميل اسم المدرسة المخزن عند فتح التطبيق
+        window.onload = function() {
+            const savedSchool = localStorage.getItem('anab_school_name');
+            if (savedSchool) {
+                document.getElementById('schoolNameInput').value = savedSchool;
+                document.getElementById('footerSchoolName').innerText = savedSchool;
+            }
+            loadStudents();
+        };
+
+        function saveSchoolName() {
+            const name = document.getElementById('schoolNameInput').value.trim() || 'المدرسة';
+            localStorage.setItem('anab_school_name', name);
+            document.getElementById('footerSchoolName').innerText = name;
+        }
+
+        function getKey() {
+            const grade = document.getElementById('gradeSelect').value;
+            const section = document.getElementById('sectionSelect').value;
+            const term = document.getElementById('termSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            return `anab_data_${grade}_${section}_${term}_${month}`;
+        }
+
+        function loadStudents() {
+            const tableBody = document.getElementById('studentsTableBody');
+            const key = getKey();
+            const data = JSON.parse(localStorage.getItem(key)) || [];
+            
+            tableBody.innerHTML = '';
+            document.getElementById('studentCountBadge').innerText = `${data.length} طالب`;
+
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-slate-400 text-sm">لا توجد أسماء مسجلة لهذا الفصل والشهر. أضف أسماء الطلاب للبدء بالمتابعة.</td></tr>`;
+                return;
+            }
+
+            data.forEach((student, index) => {
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="p-2.5 text-center font-bold text-slate-500">${index + 1}</td>
+                    <td class="p-2.5 font-medium text-slate-800">${escapeHtml(student.name)}</td>
+                    <td class="p-2.5 text-center border-r border-slate-200 bg-blue-50/30">
+                        <input type="text" value="${escapeHtml(student.listening || '')}" oninput="updateField(${index}, 'listening', this.value)" class="w-full text-center text-xs border border-blue-200 rounded p-1 bg-white focus:ring-1 focus:ring-blue-500 outline-none">
+                    </td>
+                    <td class="p-2.5 text-center border-r border-slate-200 bg-emerald-50/30">
+                        <input type="text" value="${escapeHtml(student.speaking || '')}" oninput="updateField(${index}, 'speaking', this.value)" class="w-full text-center text-xs border border-emerald-200 rounded p-1 bg-white focus:ring-1 focus:ring-emerald-500 outline-none">
+                    </td>
+                    <td class="p-2.5 text-center border-r border-slate-200 bg-amber-50/30">
+                        <input type="text" value="${escapeHtml(student.reading || '')}" oninput="updateField(${index}, 'reading', this.value)" class="w-full text-center text-xs border border-amber-200 rounded p-1 bg-white focus:ring-1 focus:ring-amber-500 outline-none">
+                    </td>
+                    <td class="p-2.5 text-center border-r border-slate-200 bg-purple-50/30">
+                        <input type="text" value="${escapeHtml(student.writing || '')}" oninput="updateField(${index}, 'writing', this.value)" class="w-full text-center text-xs border border-purple-200 rounded p-1 bg-white focus:ring-1 focus:ring-purple-500 outline-none">
+                    </td>
+                    <td class="p-2.5 border-r border-slate-200 bg-rose-50/30">
+                        <input type="text" value="${escapeHtml(student.notes || '')}" oninput="updateField(${index}, 'notes', this.value)" class="w-full text-xs border border-rose-200 rounded p-1 bg-white focus:ring-1 focus:ring-rose-500 outline-none" placeholder="ملاحظات...">
+                    </td>
+                    <td class="p-2.5 text-center">
+                        <button onclick="deleteStudent(${index})" class="text-rose-500 hover:text-rose-700 font-bold text-sm px-1.5 py-0.5 rounded transition">×</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        function addStudent() {
+            const input = document.getElementById('newStudentName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const key = getKey();
+            let data = JSON.parse(localStorage.getItem(key)) || [];
+            data.push({ name: name, listening: '', speaking: '', reading: '', writing: '', notes: '' });
+            localStorage.setItem(key, JSON.stringify(data));
+            
+            input.value = '';
+            loadStudents();
+        }
+
+        function updateField(index, field, value) {
+            const key = getKey();
+            let data = JSON.parse(localStorage.getItem(key)) || [];
+            if (data[index]) {
+                data[index][field] = value;
+                localStorage.setItem(key, JSON.stringify(data));
+            }
+        }
+
+        function deleteStudent(index) {
+            if (!confirm('هل أنت متأكد من حذف هذا الطالب من السجل؟')) return;
+            const key = getKey();
+            let data = JSON.parse(localStorage.getItem(key)) || [];
+            data.splice(index, 1);
+            localStorage.setItem(key, JSON.stringify(data));
+            loadStudents();
+        }
+
+        function toggleBulkModal() {
+            const modal = document.getElementById('bulkModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function saveBulkStudents() {
+            const text = document.getElementById('bulkNamesInput').value.trim();
+            if (!text) {
+                toggleBulkModal();
+                return;
+            }
+            const names = text.split('\n');
+            const key = getKey();
+            let data = JSON.parse(localStorage.getItem(key)) || [];
+            
+            names.forEach(n => {
+                const trimmed = n.trim();
+                if (trimmed) {
+                    data.push({ name: trimmed, listening: '', speaking: '', reading: '', writing: '', notes: '' });
+                }
+            });
+
+            localStorage.setItem(key, JSON.stringify(data));
+            document.getElementById('bulkNamesInput').value = '';
+            toggleBulkModal();
+            loadStudents();
+        }
+
+        function exportData() {
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('anab_data_') || key === 'anab_school_name') {
+                    allData[key] = localStorage.getItem(key);
+                }
+            }
+            const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Students_Backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    for (const key in imported) {
+                        localStorage.setItem(key, imported[key]);
+                    }
+                    location.reload();
+                } catch (err) {
+                    alert('الملف غير صالح!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
